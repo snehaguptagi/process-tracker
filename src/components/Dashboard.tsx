@@ -5,61 +5,44 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  FunnelChart, Funnel, LabelList,
-} from 'recharts';
-import {
-  TrendingUp, FileText, Clock, CheckCircle, Target, Users, ArrowUp, ArrowDown,
-  Filter, Plus, Trash2, AlertTriangle, RefreshCw, Loader2, AlertCircle,
+  Building2, ShieldCheck, Users, Banknote, Rocket, CheckCircle2, Circle,
+  ExternalLink, Loader2, AlertCircle, MapPin, Flag, ChevronRight, Quote,
 } from 'lucide-react';
-import AIInsights from './AIInsights';
+import NextStepPanel from './AIInsights';
 import {
-  getConfig, getItems, getMetrics, createItem, updateItem, deleteItem, reseed,
-  type Filters,
+  getJourney, getProfile, updateProfile, setProgress, itemsFor,
+  type Geography, type Dimension,
 } from '@/lib/api';
 
-const BANDS = ['all', '0%', '1-25%', '26-50%', '51-75%', '76-100%'];
+const DIM_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  Building2, ShieldCheck, Users, Banknote, Rocket,
+};
+
+const GEO_OPTIONS: { id: Geography; label: string }[] = [
+  { id: 'india', label: '🇮🇳 India' },
+  { id: 'us', label: '🇺🇸 United States' },
+  { id: 'both', label: '🌐 Both' },
+];
 
 const Dashboard = () => {
   const qc = useQueryClient();
-  const [filters, setFilters] = useState<Filters>({ type: 'all', stage: 'all', band: 'all' });
-  const [newType, setNewType] = useState('');
-  const [newStage, setNewStage] = useState('Not Started');
+  const [viewStage, setViewStage] = useState<string | null>(null);
 
-  const configQ = useQuery({ queryKey: ['config'], queryFn: getConfig });
-  const itemsQ = useQuery({ queryKey: ['items', filters], queryFn: () => getItems(filters) });
-  const metricsQ = useQuery({ queryKey: ['metrics', filters], queryFn: () => getMetrics(filters) });
+  const journeyQ = useQuery({ queryKey: ['journey'], queryFn: getJourney });
+  const profileQ = useQuery({ queryKey: ['profile'], queryFn: getProfile });
 
-  const refresh = () => {
-    qc.invalidateQueries({ queryKey: ['items'] });
-    qc.invalidateQueries({ queryKey: ['metrics'] });
-  };
-
-  const createM = useMutation({
-    mutationFn: createItem,
-    onSuccess: (it) => { toast({ title: 'Item added', description: `${it.record_id} · ${it.stage}` }); refresh(); },
-    onError: () => toast({ title: 'Could not add item', variant: 'destructive' }),
+  const profileM = useMutation({
+    mutationFn: updateProfile,
+    onSuccess: (p) => { qc.setQueryData(['profile'], p); },
+    onError: () => toast({ title: 'Could not update profile', variant: 'destructive' }),
   });
-  const updateM = useMutation({
-    mutationFn: ({ id, body }: { id: number; body: { stage?: string; progress_percent?: number } }) => updateItem(id, body),
-    onSuccess: refresh,
-    onError: () => toast({ title: 'Update failed', variant: 'destructive' }),
-  });
-  const deleteM = useMutation({
-    mutationFn: deleteItem,
-    onSuccess: () => { toast({ title: 'Item deleted' }); refresh(); },
-  });
-  const seedM = useMutation({
-    mutationFn: reseed,
-    onSuccess: (d) => { toast({ title: 'Demo data reset', description: `${d.count} items` }); refresh(); },
+  const progressM = useMutation({
+    mutationFn: ({ id, done }: { id: string; done: boolean }) => setProgress(id, done),
+    onSuccess: (p) => { qc.setQueryData(['profile'], p); },
+    onError: () => toast({ title: 'Could not save progress', variant: 'destructive' }),
   });
 
-  const config = configQ.data;
-  const items = itemsQ.data ?? [];
-  const metrics = metricsQ.data;
-
-  // --- connection / loading states ---
-  if (configQ.isError) {
+  if (journeyQ.isError || profileQ.isError) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-brand-light">
         <Card className="max-w-lg border-red-200">
@@ -79,7 +62,9 @@ uvicorn main:app --reload --port 8000</pre>
     );
   }
 
-  if (!config || !metrics) {
+  const journey = journeyQ.data;
+  const profile = profileQ.data;
+  if (!journey || !profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-brand-light">
         <Loader2 className="h-8 w-8 animate-spin text-brand-primary" />
@@ -87,307 +72,226 @@ uvicorn main:app --reload --port 8000</pre>
     );
   }
 
-  const funnelData = [
-    { name: 'Total', value: metrics.total, fill: '#002f5f' },
-    { name: 'Started', value: metrics.total - metrics.not_started, fill: '#0077c8' },
-    { name: 'In Progress', value: metrics.in_progress, fill: '#60a5fa' },
-    { name: 'Completed', value: metrics.completed, fill: '#22c55e' },
-  ];
+  const geo = profile.geography;
+  const completed = new Set(profile.completed);
+  const activeStageId = viewStage ?? profile.stage;
+  const stage = journey.stages.find((s) => s.id === activeStageId) ?? journey.stages[0];
+  const isCurrent = stage.id === profile.stage;
+  const profileKey = `${profile.stage}:${geo}:${profile.completed.length}`;
 
-  const setFilter = (key: keyof Filters, value: string) =>
-    setFilters((f) => ({ ...f, [key]: value }));
+  const stageBlocks = journey.playbook[stage.id] ?? {};
+  const dimsForStage: Dimension[] = journey.dimensions.filter((d) => stageBlocks[d.id]);
+  const companies = journey.companies.filter((c) => c.stage === stage.id);
 
-  const FilterGroup = ({ label, k, options }: { label: string; k: keyof Filters; options: string[] }) => (
-    <div>
-      <label className="text-sm font-medium text-brand-primary mb-3 block">{label}</label>
-      <div className="space-y-2">
-        {options.map((opt) => (
-          <Button
-            key={opt}
-            variant={filters[k] === opt ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilter(k, opt)}
-            className={`w-full justify-start text-left ${filters[k] === opt
-              ? 'bg-brand-primary hover:bg-brand-primary/90'
-              : 'border-brand-accent text-brand-accent hover:bg-brand-accent/10'}`}
-          >
-            {opt === 'all' ? `All ${label}s` : opt}
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
+  const doneCount = (sid: string) => {
+    const s = journey.stages.find((x) => x.id === sid);
+    if (!s) return 0;
+    return s.milestones.filter((m) => completed.has(m.id)).length;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-light to-gray-50">
       {/* Header */}
       <div className="bg-brand-primary text-white p-6 shadow-lg">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="text-3xl font-bold">Process Tracker</div>
-          <div className="text-right">
-            <h1 className="text-2xl md:text-3xl font-bold">Workflow Analytics Dashboard</h1>
-            <p className="text-white/80 text-sm">{metrics.total} items in view · {config.stages.length}-stage pipeline</p>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="text-3xl font-bold">{journey.meta.title}</div>
+              <p className="text-white/80 text-sm mt-1 max-w-2xl">{journey.meta.subtitle}</p>
+            </div>
+            {/* Geography selector */}
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-white/70" />
+              {GEO_OPTIONS.map((g) => (
+                <Button
+                  key={g.id}
+                  size="sm"
+                  variant={geo === g.id ? 'default' : 'outline'}
+                  onClick={() => profileM.mutate({ geography: g.id })}
+                  className={geo === g.id
+                    ? 'bg-white text-brand-primary hover:bg-white/90'
+                    : 'border-white/40 text-white hover:bg-white/10 bg-transparent'}
+                >
+                  {g.label}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto flex">
-        {/* Sidebar */}
-        <div className="w-80 p-6 bg-white shadow-lg border-r border-brand-accent/20">
-          <div className="sticky top-6 space-y-6">
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-brand-primary" />
-              <h3 className="text-lg font-semibold text-brand-primary">Filters</h3>
-            </div>
-            <FilterGroup label="Type" k="type" options={['all', ...config.types]} />
-            <FilterGroup label="Stage" k="stage" options={['all', ...config.stages]} />
-            <FilterGroup label="Progress" k="band" options={BANDS} />
-
-            {/* Add item */}
-            <div className="pt-4 border-t">
-              <label className="text-sm font-medium text-brand-primary mb-3 block">Add item</label>
-              <div className="space-y-2">
-                <select
-                  value={newType || config.types[0]}
-                  onChange={(e) => setNewType(e.target.value)}
-                  className="w-full rounded-md border border-brand-accent/40 p-2 text-sm"
-                >
-                  {config.types.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <select
-                  value={newStage}
-                  onChange={(e) => setNewStage(e.target.value)}
-                  className="w-full rounded-md border border-brand-accent/40 p-2 text-sm"
-                >
-                  {config.stages.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <Button
-                  size="sm"
-                  className="w-full bg-brand-primary hover:bg-brand-primary/90"
-                  disabled={createM.isPending}
-                  onClick={() => createM.mutate({ record_type: newType || config.types[0], stage: newStage })}
-                >
-                  <Plus className="w-4 h-4 mr-1" /> Add
-                </Button>
-              </div>
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full border-brand-neutral text-brand-neutral hover:bg-brand-neutral/10"
-              disabled={seedM.isPending}
-              onClick={() => seedM.mutate()}
-            >
-              <RefreshCw className={`w-4 h-4 mr-1 ${seedM.isPending ? 'animate-spin' : ''}`} /> Reset demo data
-            </Button>
+      {/* Stage rail */}
+      <div className="bg-white border-b border-brand-accent/20 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4 overflow-x-auto">
+          <div className="flex items-stretch gap-2 min-w-max">
+            {journey.stages.map((s, i) => {
+              const done = doneCount(s.id);
+              const total = s.milestones.length;
+              const allDone = total > 0 && done === total;
+              const isActive = s.id === stage.id;
+              const isYou = s.id === profile.stage;
+              return (
+                <div key={s.id} className="flex items-center">
+                  <button
+                    onClick={() => setViewStage(s.id)}
+                    className={`text-left rounded-lg border px-3 py-2 transition-all min-w-[150px] ${
+                      isActive
+                        ? 'border-brand-primary bg-brand-primary/5 ring-1 ring-brand-primary'
+                        : 'border-gray-200 hover:border-brand-accent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-xs font-bold ${allDone ? 'text-green-600' : 'text-brand-accent'}`}>
+                        {i + 1}
+                      </span>
+                      <span className="text-sm font-semibold text-brand-primary truncate">{s.name}</span>
+                      {isYou && <Flag className="w-3 h-3 text-brand-accent flex-shrink-0" />}
+                    </div>
+                    <div className="text-[11px] text-gray-500 mt-0.5">{done}/{total} done</div>
+                  </button>
+                  {i < journey.stages.length - 1 && (
+                    <ChevronRight className="w-4 h-4 text-gray-300 mx-0.5 flex-shrink-0" />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
+      </div>
 
-        {/* Main */}
-        <div className="flex-1 p-6 space-y-8">
-          {/* Target vs Actual */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {metrics.target_vs_actual.map((item) => (
-              <Card key={item.type} className="shadow-lg border-brand-primary/20 bg-gradient-to-br from-white to-blue-50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center justify-between text-brand-primary">
-                    <span className="flex items-center gap-2"><Target className="w-5 h-5" /> {item.type} — completed vs goal</span>
-                    {item.variance >= 0 ? <ArrowUp className="w-5 h-5 text-green-600" /> : <ArrowDown className="w-5 h-5 text-red-600" />}
+      <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main column */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Stage header */}
+          <Card className="shadow-lg border-brand-primary/20">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="text-2xl text-brand-primary flex items-center gap-2">
+                    {stage.name}
+                    {isCurrent && <Badge className="bg-brand-accent text-white">You are here</Badge>}
                   </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div><div className="text-xl font-bold text-brand-accent">{item.target.toLocaleString()}</div><div className="text-xs text-gray-600">Goal</div></div>
-                    <div><div className="text-xl font-bold text-brand-primary">{item.actual.toLocaleString()}</div><div className="text-xs text-gray-600">Completed</div></div>
-                    <div><div className={`text-xl font-bold ${item.difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>{item.difference >= 0 ? '+' : ''}{item.difference}</div><div className="text-xs text-gray-600">Gap</div></div>
-                  </div>
-                  <div className="text-center">
-                    <Badge className={item.variance >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{item.variance}% vs goal</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* KPI cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Kpi icon={<FileText className="w-5 h-5 mr-2" />} label="Total Records" value={metrics.total} sub="Active in current view" color="text-brand-primary" />
-            <Kpi icon={<CheckCircle className="w-5 h-5 mr-2" />} label="Completed" value={metrics.completed} badge={`${metrics.completion_rate}% completion`} color="text-green-600" />
-            <Kpi icon={<Clock className="w-5 h-5 mr-2" />} label="In Progress" value={metrics.in_progress} badge={`${metrics.stuck_total} stuck > ${metrics.stuck_days_threshold}d`} color="text-amber-600" />
-            <Kpi icon={<TrendingUp className="w-5 h-5 mr-2" />} label="Avg. Progress" value={`${metrics.avg_progress}%`} sub="Mean completion" color="text-brand-accent" />
-          </div>
-
-          {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="shadow-lg border-brand-primary/20">
-              <CardHeader className="pb-2"><CardTitle className="text-brand-primary flex items-center gap-2"><Users className="w-5 h-5" /> Progress Funnel</CardTitle></CardHeader>
-              <CardContent className="pt-4">
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <FunnelChart>
-                      <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #0077c8', borderRadius: '8px' }} />
-                      <Funnel dataKey="value" data={funnelData} isAnimationActive>
-                        <LabelList position="center" fill="#fff" stroke="none" dataKey="name" />
-                        <LabelList position="right" fill="#002f5f" stroke="none" dataKey="value" />
-                      </Funnel>
-                    </FunnelChart>
-                  </ResponsiveContainer>
+                  <p className="text-brand-accent font-medium mt-1">{stage.tagline}</p>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-lg border-brand-accent/20">
-              <CardHeader className="pb-2"><CardTitle className="text-brand-primary">Distribution by Stage</CardTitle></CardHeader>
-              <CardContent className="pt-4">
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={metrics.stage_distribution} layout="vertical" margin={{ left: 80 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#a7a9ac" opacity={0.3} />
-                      <XAxis type="number" stroke="#a7a9ac" allowDecimals={false} />
-                      <YAxis dataKey="stage" type="category" width={75} tick={{ fontSize: 12 }} stroke="#a7a9ac" />
-                      <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #0077c8', borderRadius: '8px' }} formatter={(v: number) => [`${v} items`, 'Count']} />
-                      <Bar dataKey="count" fill="#0077c8" radius={[0, 8, 8, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Aging / bottleneck */}
-          <Card className="shadow-lg border-amber-300/40">
-            <CardHeader className="pb-2 border-b">
-              <CardTitle className="text-brand-primary flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500" /> Aging &amp; Bottleneck</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div>
-                {metrics.bottleneck ? (
-                  <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
-                    <p className="text-sm text-gray-600">Top bottleneck</p>
-                    <p className="text-xl font-bold text-amber-700">{metrics.bottleneck.stage}</p>
-                    <p className="text-sm text-gray-700 mt-1">{metrics.bottleneck.reason}</p>
-                  </div>
-                ) : <p className="text-sm text-gray-500">No bottleneck in the current view.</p>}
-                <div className="mt-4 space-y-2">
-                  {metrics.aging_by_stage.filter((s) => s.count > 0).map((s) => (
-                    <div key={s.stage} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700">{s.stage}</span>
-                      <span className="text-gray-500">{s.count} open · avg {s.avg_days}d · {s.stuck} stuck</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-brand-primary mb-2">Oldest open items</p>
-                {metrics.oldest_open.length === 0 ? (
-                  <p className="text-sm text-gray-500">Nothing aging — all open items are fresh.</p>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {metrics.oldest_open.map((o) => (
-                      <li key={o.record_id} className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-brand-primary">{o.record_id}</span>
-                        <span className="text-gray-500">{o.stage} · {o.days_in_stage}d</span>
-                      </li>
-                    ))}
-                  </ul>
+                {!isCurrent && (
+                  <Button
+                    size="sm"
+                    className="bg-brand-primary hover:bg-brand-primary/90 flex-shrink-0"
+                    onClick={() => profileM.mutate({ stage: stage.id })}
+                  >
+                    Set as my stage
+                  </Button>
                 )}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Records table */}
-          <Card className="shadow-lg border-brand-neutral/20">
-            <CardHeader className="pb-2 border-b flex flex-row items-center justify-between">
-              <CardTitle className="text-brand-primary">Records {itemsQ.isFetching && <Loader2 className="inline w-4 h-4 ml-2 animate-spin text-brand-accent" />}</CardTitle>
-              <span className="text-sm text-gray-500">{items.length} shown</span>
             </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-brand-primary text-white">
-                      {['Record ID', 'Type', 'Stage', 'Progress', 'Status', ''].map((h) => (
-                        <th key={h} className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {items.length === 0 && (
-                      <tr><td colSpan={6} className="px-5 py-8 text-center text-gray-500">No items match these filters. Add one or reset the demo data.</td></tr>
-                    )}
-                    {items.map((item) => (
-                      <tr key={item.id} className="hover:bg-blue-50 transition-colors">
-                        <td className="px-5 py-3 text-brand-primary font-medium">{item.record_id}</td>
-                        <td className="px-5 py-3">
-                          <Badge variant="outline" className={item.record_type === 'Standard' ? 'border-brand-primary text-brand-primary' : 'border-brand-accent text-brand-accent'}>{item.record_type}</Badge>
-                        </td>
-                        <td className="px-5 py-3">
-                          <select
-                            value={item.stage}
-                            onChange={(e) => updateM.mutate({ id: item.id, body: { stage: e.target.value } })}
-                            className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs"
-                          >
-                            {config.stages.map((s) => <option key={s} value={s}>{s}</option>)}
-                          </select>
-                        </td>
-                        <td className="px-5 py-3">
-                          <div className="flex items-center gap-2">
-                            <button className="w-6 h-6 rounded border text-gray-600 disabled:opacity-40" disabled={item.progress_percent <= 0}
-                              onClick={() => updateM.mutate({ id: item.id, body: { progress_percent: Math.max(0, item.progress_percent - 10) } })}>−</button>
-                            <div className="w-16 bg-gray-200 rounded-full h-2.5">
-                              <div className="bg-brand-accent h-2.5 rounded-full transition-all" style={{ width: `${item.progress_percent}%` }} />
-                            </div>
-                            <button className="w-6 h-6 rounded border text-gray-600 disabled:opacity-40" disabled={item.progress_percent >= 100}
-                              onClick={() => updateM.mutate({ id: item.id, body: { progress_percent: Math.min(100, item.progress_percent + 10) } })}>+</button>
-                            <span className="text-xs font-medium text-brand-primary w-9">{item.progress_percent}%</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-3">
-                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            item.progress === 'Done' ? 'bg-green-100 text-green-800'
-                              : item.progress === 'In Progress' ? 'bg-amber-100 text-amber-800'
-                                : 'bg-gray-100 text-gray-800'}`}>{item.progress}</span>
-                        </td>
-                        <td className="px-5 py-3">
-                          <button className="text-gray-400 hover:text-red-600" onClick={() => deleteM.mutate(item.id)} aria-label="Delete">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <CardContent>
+              <p className="text-sm text-gray-700 leading-relaxed">{stage.focus}</p>
+              {/* Milestones */}
+              <div className="mt-4 space-y-2">
+                <p className="text-sm font-semibold text-brand-primary">Milestones</p>
+                {stage.milestones.map((m) => {
+                  const isDone = completed.has(m.id);
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => progressM.mutate({ id: m.id, done: !isDone })}
+                      className="w-full flex items-start gap-2 text-left rounded-md p-2 hover:bg-gray-50 transition-colors"
+                    >
+                      {isDone
+                        ? <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        : <Circle className="w-5 h-5 text-gray-300 mt-0.5 flex-shrink-0" />}
+                      <span className={`text-sm ${isDone ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+                        {m.text}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
 
-          {/* AI insights — analyzes the current filtered view */}
-          <AIInsights filters={filters} />
+          {/* Playbook per dimension */}
+          {dimsForStage.map((dim) => {
+            const block = stageBlocks[dim.id];
+            const items = itemsFor(block, geo);
+            if (items.length === 0) return null;
+            const Icon = DIM_ICONS[dim.icon] ?? Rocket;
+            return (
+              <Card key={dim.id} className="shadow-lg border-brand-accent/20">
+                <CardHeader className="pb-2 border-b">
+                  <CardTitle className="text-brand-primary flex items-center gap-2 text-lg">
+                    <Icon className="w-5 h-5 text-brand-accent" /> {dim.label}
+                  </CardTitle>
+                  {block.summary && <p className="text-sm text-gray-600 mt-1">{block.summary}</p>}
+                </CardHeader>
+                <CardContent className="pt-4 space-y-3">
+                  {items.map((it, i) => (
+                    <div key={i} className="rounded-lg border border-gray-200 p-3 hover:border-brand-accent/40 transition-colors">
+                      <p className="text-sm font-semibold text-brand-primary">{it.action}</p>
+                      <a
+                        href={it.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm text-brand-accent hover:underline inline-flex items-center gap-1 mt-0.5"
+                      >
+                        {it.where} <ExternalLink className="h-3 w-3" />
+                      </a>
+                      {it.note && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{it.note}</p>}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            );
+          })}
 
-          <div className="text-center text-sm text-gray-500 border-t pt-6">
-            <p className="font-medium text-lg">Process Tracker — Workflow Analytics Dashboard</p>
-            <p className="text-xs mt-2">Live pipeline · add, move &amp; track items · AI bottleneck insights</p>
+          {/* Company precedents */}
+          {companies.length > 0 && (
+            <Card className="shadow-lg border-brand-neutral/20">
+              <CardHeader className="pb-2 border-b">
+                <CardTitle className="text-brand-primary flex items-center gap-2 text-lg">
+                  <Quote className="w-5 h-5 text-brand-neutral" /> How top companies did it
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-4">
+                {companies.map((c) => (
+                  <div key={c.name} className="border-l-2 border-brand-accent/40 pl-3">
+                    <p className="text-sm font-semibold text-brand-primary">{c.name} <span className="font-normal text-gray-500">— {c.does}</span></p>
+                    <p className="text-sm text-gray-700 mt-1">{c.move}</p>
+                    <p className="text-sm text-brand-accent mt-1">Lesson: {c.lesson}</p>
+                    <a
+                      href={c.source}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-gray-400 hover:text-brand-accent hover:underline inline-flex items-center gap-1 mt-1"
+                    >
+                      source <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          <div className="lg:sticky lg:top-6 space-y-6">
+            <NextStepPanel profileKey={profileKey} />
+            <Card className="border-gray-200 bg-gray-50/50">
+              <CardContent className="p-4">
+                <p className="text-xs text-gray-500 leading-relaxed">{journey.meta.disclaimer}</p>
+              </CardContent>
+            </Card>
           </div>
         </div>
+      </div>
+
+      <div className="text-center text-sm text-gray-500 border-t pt-6 pb-8 max-w-7xl mx-auto px-6">
+        <p className="font-medium text-lg text-brand-primary">{journey.meta.title}</p>
+        <p className="text-xs mt-2">Stage-aware playbook · India &amp; US · grounded in real sources and how the best did it</p>
       </div>
     </div>
   );
 };
-
-const Kpi = ({ icon, label, value, sub, badge, color }: {
-  icon: React.ReactNode; label: string; value: React.ReactNode; sub?: string; badge?: string; color: string;
-}) => (
-  <Card className="shadow-lg border-brand-primary/10 bg-gradient-to-br from-white to-blue-50">
-    <CardHeader className="pb-2">
-      <CardTitle className={`text-sm flex items-center font-semibold ${color}`}>{icon}{label}</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className={`text-4xl font-bold ${color}`}>{value}</div>
-      {badge ? <div className="mt-2"><Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100 text-xs">{badge}</Badge></div>
-        : <div className="mt-2 text-xs text-gray-600">{sub}</div>}
-    </CardContent>
-  </Card>
-);
 
 export default Dashboard;

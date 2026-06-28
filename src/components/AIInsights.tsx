@@ -2,45 +2,51 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, AlertCircle, AlertTriangle, ArrowRight } from "lucide-react";
-import { getInsights, type Filters, type Insights } from "@/lib/api";
+import { Sparkles, Loader2, AlertCircle, ArrowRight, ExternalLink, Quote } from "lucide-react";
+import { getNextStep, type NextStep } from "@/lib/api";
 
-interface AIInsightsProps {
-  filters: Filters;
+interface NextStepPanelProps {
+  /** Bump this to invalidate a stale recommendation when the profile changes. */
+  profileKey: string;
 }
 
 /**
- * AI Pipeline Insights — calls the backend, which runs Claude when an
- * ANTHROPIC_API_KEY is configured server-side, or a deterministic heuristic
- * otherwise. Either way the read is grounded in the current filtered metrics.
+ * Suggests the single most suitable next move for the founder's current stage,
+ * geography and progress. Runs Claude when ANTHROPIC_API_KEY is configured
+ * server-side, or a deterministic heuristic otherwise — both grounded ONLY in
+ * the sourced knowledge base (every link comes from a real, cited source).
  */
-const AIInsights = ({ filters }: AIInsightsProps) => {
+const NextStepPanel = ({ profileKey }: NextStepPanelProps) => {
   const [loading, setLoading] = useState(false);
   const [engine, setEngine] = useState("");
-  const [insights, setInsights] = useState<Insights | null>(null);
+  const [step, setStep] = useState<NextStep | null>(null);
   const [error, setError] = useState("");
+  const [forKey, setForKey] = useState("");
 
   const generate = async () => {
     setLoading(true);
     setError("");
-    setInsights(null);
+    setStep(null);
     try {
-      const res = await getInsights(filters);
+      const res = await getNextStep();
       setEngine(res.engine);
-      setInsights(res.insights);
+      setStep(res.next_step);
+      setForKey(profileKey);
     } catch {
       setError("Couldn't reach the backend. Is it running on port 8000?");
     }
     setLoading(false);
   };
 
+  const stale = step !== null && forKey !== profileKey;
+
   return (
-    <Card className="shadow-lg border border-brand-accent/20 mt-8">
+    <Card className="shadow-lg border border-brand-accent/20" id="next-step">
       <CardHeader className="bg-brand-primary text-white rounded-t-lg">
         <CardTitle className="text-lg font-semibold flex items-center justify-between">
           <span className="flex items-center">
             <Sparkles className="h-5 w-5 mr-3" />
-            AI Pipeline Insights
+            Your most suitable next step
           </span>
           {engine && (
             <Badge variant="outline" className="text-xs font-normal border-white/40 text-white">
@@ -56,9 +62,9 @@ const AIInsights = ({ filters }: AIInsightsProps) => {
           className="bg-brand-primary hover:bg-brand-primary/90 text-white"
         >
           {loading ? (
-            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Analyzing…</>
+            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Thinking…</>
           ) : (
-            <><Sparkles className="h-4 w-4 mr-2" /> Analyze pipeline with AI</>
+            <><Sparkles className="h-4 w-4 mr-2" /> Suggest my next step</>
           )}
         </Button>
 
@@ -69,43 +75,65 @@ const AIInsights = ({ filters }: AIInsightsProps) => {
           </div>
         )}
 
-        {insights && (
+        {stale && (
+          <p className="text-xs text-amber-600">
+            Your profile changed — re-run to refresh this recommendation.
+          </p>
+        )}
+
+        {step && (
           <div className="space-y-4">
-            <div className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg p-4 border border-gray-200">
-              {insights.status}
+            <div className="rounded-lg p-4 border border-brand-accent/30 bg-gradient-to-br from-white to-blue-50">
+              <p className="text-base font-semibold text-brand-primary flex items-start gap-2">
+                <ArrowRight className="h-5 w-5 text-brand-accent mt-0.5 flex-shrink-0" />
+                {step.step}
+              </p>
+              <p className="text-sm text-gray-700 mt-2 leading-relaxed">{step.why}</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {step.where.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-brand-primary flex items-center gap-1 mb-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500" /> Bottlenecks
-                </p>
+                <p className="text-sm font-semibold text-brand-primary mb-2">Where to do it</p>
                 <ul className="space-y-1.5">
-                  {insights.bottlenecks.map((b, i) => (
-                    <li key={i} className="text-sm text-gray-700 flex gap-2">
-                      <span className="text-amber-500">•</span> {b}
+                  {step.where.map((w, i) => (
+                    <li key={i}>
+                      <a
+                        href={w.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm text-brand-accent hover:underline inline-flex items-center gap-1"
+                      >
+                        {w.label} <ExternalLink className="h-3 w-3" />
+                      </a>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-brand-primary flex items-center gap-1 mb-2">
-                  <ArrowRight className="h-4 w-4 text-brand-accent" /> Recommended actions
+            )}
+
+            {step.precedent && (
+              <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+                <p className="text-sm font-semibold text-brand-primary flex items-center gap-1 mb-1">
+                  <Quote className="h-4 w-4 text-brand-neutral" /> How {step.precedent.company} did it
                 </p>
-                <ul className="space-y-1.5">
-                  {insights.actions.map((a, i) => (
-                    <li key={i} className="text-sm text-gray-700 flex gap-2">
-                      <span className="text-brand-accent">→</span> {a}
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-sm text-gray-700">{step.precedent.lesson}</p>
+                <a
+                  href={step.precedent.source}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-brand-accent hover:underline inline-flex items-center gap-1 mt-1"
+                >
+                  source <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
-            </div>
+            )}
           </div>
         )}
 
-        {!insights && !error && !loading && (
+        {!step && !error && !loading && (
           <p className="text-sm text-gray-500">
-            Reads the current filtered pipeline and flags bottlenecks + the next moves.
+            Reads your stage, geography and progress, then recommends the single highest-leverage
+            move — with real links and a precedent from a company that did it.
           </p>
         )}
       </CardContent>
@@ -113,4 +141,4 @@ const AIInsights = ({ filters }: AIInsightsProps) => {
   );
 };
 
-export default AIInsights;
+export default NextStepPanel;

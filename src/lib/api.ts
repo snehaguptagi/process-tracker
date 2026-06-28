@@ -1,74 +1,99 @@
-// Client for the Process Tracker backend.
+// Client for the Founder Zero → Hero backend.
 const BASE = (import.meta.env.VITE_API_BASE as string) || "http://localhost:8000";
 
-export interface Item {
-  id: number;
-  record_id: string;
-  record_type: string;
-  stage: string;
-  progress_percent: number;
-  progress: string; // derived label: Not Started / In Progress / Done
-  band: string;
-  created_at: string;
-  updated_at: string;
-  stage_entered_at: string;
-}
-
-export interface Config {
-  stages: string[];
-  types: string[];
-  targets: Record<string, number>;
-}
+export type Geography = "india" | "us" | "both";
 
 export interface Health {
   status: string;
   claude: boolean;
   model: string;
-  count: number;
+  stages: number;
 }
 
-export interface StageDist { stage: string; count: number; percentage: number; }
-export interface AgingStage { stage: string; count: number; avg_days: number; max_days: number; stuck: number; }
-export interface OldestItem { record_id: string; stage: string; days_in_stage: number; progress_percent: number; }
-export interface TargetActual { type: string; target: number; actual: number; difference: number; variance: number; }
-export interface Bottleneck { stage: string; count: number; stuck: number; avg_days: number; reason: string; }
-
-export interface Metrics {
-  total: number;
-  completed: number;
-  in_progress: number;
-  not_started: number;
-  avg_progress: number;
-  completion_rate: number;
-  by_type: Record<string, number>;
-  stage_distribution: StageDist[];
-  aging_by_stage: AgingStage[];
-  oldest_open: OldestItem[];
-  stuck_total: number;
-  bottleneck: Bottleneck | null;
-  target_vs_actual: TargetActual[];
-  stuck_days_threshold: number;
+export interface Milestone {
+  id: string;
+  text: string;
 }
 
-export interface Insights {
-  status: string;
-  bottlenecks: string[];
-  actions: string[];
+export interface Stage {
+  id: string;
+  name: string;
+  order: number;
+  tagline: string;
+  focus: string;
+  milestones: Milestone[];
 }
 
-export interface Filters {
-  type?: string;
-  stage?: string;
-  band?: string;
+export interface Dimension {
+  id: string;
+  label: string;
+  icon: string;
 }
 
-function qs(f: Filters): string {
-  const p = new URLSearchParams();
-  if (f.type && f.type !== "all") p.set("type", f.type);
-  if (f.stage && f.stage !== "all") p.set("stage", f.stage);
-  if (f.band && f.band !== "all") p.set("band", f.band);
-  const s = p.toString();
-  return s ? `?${s}` : "";
+export interface PlaybookItem {
+  action: string;
+  where: string;
+  url: string;
+  note?: string;
+}
+
+export interface PlaybookBlock {
+  summary?: string;
+  global?: PlaybookItem[];
+  india?: PlaybookItem[];
+  us?: PlaybookItem[];
+}
+
+export interface Company {
+  name: string;
+  does: string;
+  stage: string;
+  move: string;
+  lesson: string;
+  source: string;
+}
+
+export interface Meta {
+  title: string;
+  subtitle: string;
+  disclaimer: string;
+  geographies: string[];
+}
+
+export interface Journey {
+  meta: Meta;
+  dimensions: Dimension[];
+  stages: Stage[];
+  // playbook[stageId][dimensionId] = PlaybookBlock
+  playbook: Record<string, Record<string, PlaybookBlock>>;
+  companies: Company[];
+}
+
+export interface Profile {
+  stage: string;
+  geography: Geography;
+  completed: string[];
+}
+
+export interface WhereLink {
+  label: string;
+  url: string;
+}
+
+export interface Precedent {
+  company: string;
+  lesson: string;
+  source: string;
+}
+
+export interface NextStep {
+  step: string;
+  why: string;
+  stage: string;
+  dimension: string;
+  where: WhereLink[];
+  precedent: Precedent | null;
+  sources: string[];
 }
 
 async function j<T>(r: Response): Promise<T> {
@@ -77,37 +102,32 @@ async function j<T>(r: Response): Promise<T> {
 }
 
 export const getHealth = () => fetch(`${BASE}/api/health`).then(j<Health>);
-export const getConfig = () => fetch(`${BASE}/api/config`).then(j<Config>);
-export const getItems = (f: Filters = {}) =>
-  fetch(`${BASE}/api/items${qs(f)}`).then(j<{ items: Item[] }>).then((d) => d.items);
-export const getMetrics = (f: Filters = {}) =>
-  fetch(`${BASE}/api/metrics${qs(f)}`).then(j<Metrics>);
+export const getJourney = () => fetch(`${BASE}/api/journey`).then(j<Journey>);
+export const getProfile = () => fetch(`${BASE}/api/profile`).then(j<Profile>);
 
-export const createItem = (body: { record_type: string; stage?: string; progress_percent?: number }) =>
-  fetch(`${BASE}/api/items`, {
-    method: "POST",
+export const updateProfile = (body: { stage?: string; geography?: Geography }) =>
+  fetch(`${BASE}/api/profile`, {
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-  }).then(j<Item>);
+  }).then(j<Profile>);
 
-export const updateItem = (id: number, body: { stage?: string; progress_percent?: number }) =>
-  fetch(`${BASE}/api/items/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  }).then(j<Item>);
-
-export const deleteItem = (id: number) =>
-  fetch(`${BASE}/api/items/${id}`, { method: "DELETE" }).then((r) => {
-    if (!r.ok) throw new Error(`${r.status}`);
-  });
-
-export const getInsights = (f: Filters = {}) =>
-  fetch(`${BASE}/api/insights`, {
+export const setProgress = (item_id: string, done: boolean) =>
+  fetch(`${BASE}/api/profile/progress`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(f),
-  }).then(j<{ engine: string; insights: Insights }>);
+    body: JSON.stringify({ item_id, done }),
+  }).then(j<Profile>);
 
-export const reseed = () =>
-  fetch(`${BASE}/api/seed`, { method: "POST" }).then(j<{ status: string; count: number }>);
+export const getNextStep = () =>
+  fetch(`${BASE}/api/next-step`, { method: "POST" }).then(
+    j<{ engine: string; next_step: NextStep }>,
+  );
+
+// Flatten a stage's playbook block into a geography-filtered item list.
+export function itemsFor(block: PlaybookBlock, geo: Geography): PlaybookItem[] {
+  const items: PlaybookItem[] = [...(block.global ?? [])];
+  if (geo === "india" || geo === "both") items.push(...(block.india ?? []));
+  if (geo === "us" || geo === "both") items.push(...(block.us ?? []));
+  return items;
+}

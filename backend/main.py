@@ -1,16 +1,16 @@
-"""Process Tracker — FastAPI backend.
+"""Founder Zero → Hero — FastAPI backend.
+
+A stage-aware playbook for Indian & US tech founders, grounded in real sources
+and how top companies did it. The only mutable state is the founder's profile
+(stage, geography, completed milestones); everything else is the sourced KB.
 
 Endpoints
-  GET    /api/health                mode + whether Claude is wired + item count
-  GET    /api/config                stages, types, targets (so the UI isn't hardcoded)
-  PUT    /api/targets               update per-type completed-item goals
-  GET    /api/items                 list items (filters: type, stage, band)
-  POST   /api/items                 create an item
-  PATCH  /api/items/{id}            move stage / set progress
-  DELETE /api/items/{id}            delete an item
-  GET    /api/metrics               KPIs, stage distribution, aging, bottleneck, target-vs-actual
-  POST   /api/insights              Claude (or heuristic) read over the current view
-  POST   /api/seed                  reset to deterministic demo data
+  GET  /api/health             mode + whether Claude is wired + stage count
+  GET  /api/journey            the full knowledge base (stages, dimensions, playbook, companies)
+  GET  /api/profile            current founder profile
+  PUT  /api/profile            set stage and/or geography
+  POST /api/profile/progress   toggle a milestone done/undone
+  POST /api/next-step          recommend the single most suitable next move (Claude or heuristic)
 
 Run:  uvicorn main:app --reload --port 8000   (from the backend/ directory)
 """
@@ -21,16 +21,14 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 import db
 import engine
-import metrics as metrics_mod
-from seed_data import seed
 
 load_dotenv()
 
-app = FastAPI(title="Process Tracker")
+app = FastAPI(title="Founder Zero → Hero")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # dev only; lock down in production
@@ -43,7 +41,6 @@ app.add_middleware(
 @app.on_event("startup")
 def _startup() -> None:
     db.init_db()
-    seed(force=False)  # seed demo data only if the table is empty
 
 
 @app.get("/api/health")
@@ -52,87 +49,53 @@ def health():
         "status": "ok",
         "claude": bool(os.getenv("ANTHROPIC_API_KEY")),
         "model": engine.MODEL,
-        "count": db.count_items(),
+        "stages": len(db.STAGE_IDS),
     }
 
 
-@app.get("/api/config")
-def config():
-    return {"stages": db.STAGES, "types": db.TYPES, "targets": db.get_targets()}
+@app.get("/api/journey")
+def journey():
+    """The full sourced knowledge base — drives the whole UI."""
+    return {
+        "meta": db.KB["meta"],
+        "dimensions": db.KB["dimensions"],
+        "stages": db.KB["stages"],
+        "playbook": db.KB["playbook"],
+        "companies": db.KB["companies"],
+    }
 
 
-class TargetsRequest(BaseModel):
-    targets: dict[str, int]
+@app.get("/api/profile")
+def get_profile():
+    return db.get_profile()
 
 
-@app.put("/api/targets")
-def put_targets(req: TargetsRequest):
-    return {"targets": db.set_targets(req.targets)}
-
-
-@app.get("/api/items")
-def list_items(type: str | None = None, stage: str | None = None, band: str | None = None):
-    return {"items": db.list_items(type, stage, band)}
-
-
-class CreateItem(BaseModel):
-    record_type: str
-    stage: str = "Not Started"
-    progress_percent: int = Field(0, ge=0, le=100)
-    record_id: str | None = None
-
-
-@app.post("/api/items", status_code=201)
-def create_item(req: CreateItem):
-    if req.stage not in db.STAGES:
-        raise HTTPException(400, f"stage must be one of {db.STAGES}")
-    try:
-        return db.create_item(req.record_type, req.stage, req.progress_percent, req.record_id)
-    except Exception as exc:  # e.g. duplicate record_id
-        raise HTTPException(400, str(exc))
-
-
-class UpdateItem(BaseModel):
+class ProfileRequest(BaseModel):
     stage: str | None = None
-    progress_percent: int | None = Field(None, ge=0, le=100)
+    geography: str | None = None
 
 
-@app.patch("/api/items/{item_id}")
-def patch_item(item_id: int, req: UpdateItem):
-    if req.stage is not None and req.stage not in db.STAGES:
-        raise HTTPException(400, f"stage must be one of {db.STAGES}")
-    item = db.update_item(item_id, req.stage, req.progress_percent)
-    if not item:
-        raise HTTPException(404, "item not found")
-    return item
+@app.put("/api/profile")
+def put_profile(req: ProfileRequest):
+    if req.stage is not None and req.stage not in db.STAGE_IDS:
+        raise HTTPException(400, f"stage must be one of {db.STAGE_IDS}")
+    if req.geography is not None and req.geography not in db.GEOGRAPHIES:
+        raise HTTPException(400, f"geography must be one of {db.GEOGRAPHIES}")
+    return db.update_profile(req.stage, req.geography)
 
 
-@app.delete("/api/items/{item_id}", status_code=204)
-def remove_item(item_id: int):
-    if not db.delete_item(item_id):
-        raise HTTPException(404, "item not found")
-    return None
+class ProgressRequest(BaseModel):
+    item_id: str
+    done: bool
 
 
-@app.get("/api/metrics")
-def get_metrics(type: str | None = None, stage: str | None = None, band: str | None = None):
-    return metrics_mod.compute(db.list_items(type, stage, band))
+@app.post("/api/profile/progress")
+def post_progress(req: ProgressRequest):
+    return db.set_progress(req.item_id, req.done)
 
 
-class InsightsRequest(BaseModel):
-    type: str | None = None
-    stage: str | None = None
-    band: str | None = None
-
-
-@app.post("/api/insights")
-def post_insights(req: InsightsRequest):
-    m = metrics_mod.compute(db.list_items(req.type, req.stage, req.band))
-    result, used = engine.analyze(m)
-    return {"engine": used, "insights": result.model_dump()}
-
-
-@app.post("/api/seed")
-def reset_seed():
-    n = seed(force=True)
-    return {"status": "ok", "count": n}
+@app.post("/api/next-step")
+def next_step():
+    profile = db.get_profile()
+    step, used = engine.recommend(profile)
+    return {"engine": used, "next_step": step.model_dump()}

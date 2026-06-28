@@ -1,0 +1,269 @@
+{
+  "meta": {
+    "title": "Founder Zero → Hero",
+    "subtitle": "Stage-aware playbook for Indian & US tech founders, grounded in real sources and how top companies did it.",
+    "disclaimer": "Guidance, not legal/tax/financial advice. Fees, deadlines and program terms change — always confirm on the linked official page before acting. Figures marked 'typical' are market conventions, not rules.",
+    "geographies": ["india", "us"]
+  },
+  "dimensions": [
+    { "id": "incorporation", "label": "Incorporate / Register", "icon": "Building2" },
+    { "id": "compliance", "label": "Compliance", "icon": "ShieldCheck" },
+    { "id": "hiring", "label": "Hiring & Team", "icon": "Users" },
+    { "id": "fundraising", "label": "Fundraising", "icon": "Banknote" },
+    { "id": "incubators", "label": "Incubators & Accelerators", "icon": "Rocket" }
+  ],
+  "stages": [
+    {
+      "id": "idea",
+      "name": "Idea & Problem",
+      "order": 1,
+      "tagline": "Find a real problem worth solving.",
+      "focus": "Pick a problem you've actually felt, and find the right people to solve it with. Don't incorporate or build much yet.",
+      "milestones": [
+        { "id": "idea-1", "text": "Pin down one specific problem you've personally felt or seen" },
+        { "id": "idea-2", "text": "Talk to 10+ potential users about the problem (not your solution)" },
+        { "id": "idea-3", "text": "Find a co-founder if you need complementary skills" }
+      ]
+    },
+    {
+      "id": "validation",
+      "name": "Validate Demand",
+      "order": 2,
+      "tagline": "Prove people want it before you build a lot.",
+      "focus": "Get cheap, real signal that people will use and pay. A demo or waitlist beats a finished product nobody asked for.",
+      "milestones": [
+        { "id": "val-1", "text": "Ship a cheap signal — landing page, demo video, or waitlist" },
+        { "id": "val-2", "text": "Get 3–5 people to commit (LOI, pre-order, or design partner)" },
+        { "id": "val-3", "text": "Define the one metric that proves demand" }
+      ]
+    },
+    {
+      "id": "incorporate",
+      "name": "Incorporate & Set Up",
+      "order": 3,
+      "tagline": "Set up the legal entity the right way for your path.",
+      "focus": "Pick the entity that matches your funding plans, incorporate, get tax IDs, and set up founder equity with vesting. Getting equity + 83(b) right early avoids painful fixes later.",
+      "milestones": [
+        { "id": "inc-1", "text": "Choose entity + jurisdiction (India Pvt Ltd vs US Delaware C-corp)" },
+        { "id": "inc-2", "text": "Incorporate and get tax IDs (PAN/TAN or EIN)" },
+        { "id": "inc-3", "text": "Set up founder equity with vesting (file 83(b) within 30 days if US)" },
+        { "id": "inc-4", "text": "Open a company bank account" }
+      ]
+    },
+    {
+      "id": "mvp",
+      "name": "Build the MVP",
+      "order": 4,
+      "tagline": "Build the smallest thing that delivers the core value.",
+      "focus": "Ship a minimal product to your first design partners, make your first hire (usually an engineer), and instrument usage so you can see what works.",
+      "milestones": [
+        { "id": "mvp-1", "text": "Ship a minimal version to your first design partners" },
+        { "id": "mvp-2", "text": "Make your first key hire (usually an engineer)" },
+        { "id": "mvp-3", "text": "Instrument usage so you can see what's working" }
+      ]
+    },
+    {
+      "id": "traction",
+      "name": "First Customers & Traction",
+      "order": 5,
+      "tagline": "Get to repeatable demand.",
+      "focus": "Hand-recruit your first paying customers, find one channel that repeatably brings users, and hit early product/market-fit signals.",
+      "milestones": [
+        { "id": "trc-1", "text": "Hand-recruit your first 10+ paying customers" },
+        { "id": "trc-2", "text": "Find one channel that repeatably brings users" },
+        { "id": "trc-3", "text": "Hit early PMF signals (retention + early revenue)" }
+      ]
+    },
+    {
+      "id": "fundraise",
+      "name": "Raise (Pre-seed / Seed)",
+      "order": 6,
+      "tagline": "Raise to pour fuel on what's working.",
+      "focus": "Decide if you should raise at all, pick the right instrument, target the right investors, and consider an accelerator. Raising is a choice, not a requirement.",
+      "milestones": [
+        { "id": "fnd-1", "text": "Decide whether to raise (or stay bootstrapped)" },
+        { "id": "fnd-2", "text": "Pick an instrument and target the right investors" },
+        { "id": "fnd-3", "text": "Apply to an accelerator if it fits your stage" }
+      ]
+    },
+    {
+      "id": "scale",
+      "name": "Scale (Series A+)",
+      "order": 7,
+      "tagline": "Build the machine — Series A and beyond.",
+      "focus": "Hit the Series A bar (repeatable revenue, clean unit economics), stand up real compliance/finance ops, and build a hiring engine.",
+      "milestones": [
+        { "id": "scl-1", "text": "Hit the Series A bar (repeatable revenue, clean unit economics)" },
+        { "id": "scl-2", "text": "Stand up real compliance & finance operations" },
+        { "id": "scl-3", "text": "Build a repeatable hiring engine" }
+      ]
+    }
+  ],
+  "playbook": {
+    "idea": {
+      "hiring": {
+        "summary": "Before employees comes the co-founder. Use matching platforms if you don't already have one.",
+        "global": [
+          { "action": "Find a co-founder", "where": "YC Co-Founder Matching (free, no YC affiliation needed)", "url": "https://www.ycombinator.com/cofounder-matching", "note": "100k+ matches facilitated since 2022." },
+          { "action": "Find a co-founder / advisors", "where": "CoFoundersLab", "url": "https://cofounderslab.com/", "note": "Large freemium matching network." }
+        ]
+      },
+      "incubators": {
+        "summary": "A few programs back you at the idea (even pre-team) stage.",
+        "global": [
+          { "action": "Apply as a person, pre-idea", "where": "Entrepreneur First (EF)", "url": "https://apply.joinef.com/", "note": "Talent investor; hubs incl. Bangalore, London, SF. Forms teams from scratch." },
+          { "action": "Earliest-stage backing", "where": "a16z START", "url": "https://a16z.com/introducing-a16z-start/", "note": "US; up to $1M, even pre-idea (equity terms undisclosed)." }
+        ]
+      }
+    },
+    "validation": {
+      "fundraising": {
+        "summary": "Earliest money is your own, friends/family, angels, or non-dilutive grants. Don't over-raise before signal.",
+        "us": [
+          { "action": "Raise a first angel check on a SAFE", "where": "YC SAFE templates (post-money standard)", "url": "https://www.ycombinator.com/documents", "note": "Not debt; usually only the valuation cap is negotiated." }
+        ],
+        "india": [
+          { "action": "Use an India-legal convertible (iSAFE / CCPS)", "where": "Treelife explainer (CCPS vs SAFE in India)", "url": "https://treelife.in/finance/ccps-safe-notes-in-india/", "note": "India law doesn't recognize a US-style SAFE; iSAFE is structured as CCPS." },
+          { "action": "Apply for a non-dilutive grant", "where": "Startup India Seed Fund Scheme (SISFS)", "url": "https://seedfund.startupindia.gov.in/", "note": "Up to ₹20L for PoC/prototype; needs DPIIT recognition, incorporated ≤2 yrs." }
+        ]
+      },
+      "incubators": {
+        "summary": "Several top accelerators take idea / pre-product teams.",
+        "global": [
+          { "action": "Apply to YC (any stage)", "where": "Y Combinator", "url": "https://www.ycombinator.com/apply", "note": "$500K on SAFEs; 3-month batch; must relocate to SF for the batch." },
+          { "action": "Apply idea-stage onward", "where": "Surge (Peak XV)", "url": "https://surge.peakxv.com/", "note": "India/SEA; 8-week immersion, rolling applications." },
+          { "action": "Get backed at day zero", "where": "Antler", "url": "https://www.antler.co/apply", "note": "Backs pre-product teams; India cohorts run regularly (verify terms per cohort)." }
+        ]
+      },
+      "hiring": {
+        "summary": "Bring on advisors cheaply with a standard agreement instead of full hires.",
+        "global": [
+          { "action": "Sign advisors on standard terms", "where": "FAST agreement (Founder/Advisor Standard Template)", "url": "https://fi.co/fast", "note": "Pre-seed advisors ~0.25–0.5%, ~2-yr vest with a short cliff (typical)." }
+        ]
+      }
+    },
+    "incorporate": {
+      "incorporation": {
+        "summary": "Pick the entity that matches your funding plans: Pvt Ltd (India) or Delaware C-corp (US venture path). If you're sure you'll raise from US VCs, many incorporate in Delaware from day one.",
+        "india": [
+          { "action": "Incorporate a Private Limited (DIY)", "where": "MCA SPICe+ portal", "url": "https://www.mca.gov.in", "note": "Single form also allots DIN + PAN + TAN and opens a bank account (AGILE-PRO-S). Pvt Ltd is required to raise equity / grant ESOPs." },
+          { "action": "Incorporate (assisted)", "where": "Razorpay Rize", "url": "https://razorpay.com/rize/company-registration/private-limited/", "note": "~₹1,499 + govt fees; bundles PAN/TAN/MOA/AOA/DSC/DIN. (Also Vakilsearch, Cleartax, IndiaFilings.)" }
+        ],
+        "us": [
+          { "action": "Incorporate a Delaware C-corp (automated)", "where": "Stripe Atlas", "url": "https://stripe.com/atlas", "note": "$500 one-time; bundles EIN + 83(b); ~2 business days. Alternatives: Clerky, Firstbase." },
+          { "action": "Get your EIN (free)", "where": "IRS — Apply for an EIN online", "url": "https://www.irs.gov/businesses/small-businesses-self-employed/apply-for-an-employer-identification-number-ein-online", "note": "Never pay a fee for an EIN. Foreign founders without SSN file Form SS-4." },
+          { "action": "Decide on the India→US flip (or skip it)", "where": "Treelife — flip structure guide", "url": "https://treelife.in/legal/flip-structure-for-indian-startups/", "note": "Flip early when valuation is low, or incorporate in Delaware from day one if the US-VC path is certain. Needs Indian + US counsel." }
+        ]
+      },
+      "compliance": {
+        "summary": "Get recognized, get your tax registrations, and lock down founder equity correctly from the start.",
+        "india": [
+          { "action": "Get DPIIT Startup India recognition (free)", "where": "Startup India portal", "url": "https://www.startupindia.gov.in/content/sih/en/startupgov/startup_recognition_page.html", "note": "Unlocks the 80-IAC tax holiday and other benefits; ~72 hrs." },
+          { "action": "Register for GST when liable", "where": "GST portal", "url": "https://www.gst.gov.in", "note": "Mandatory above ₹40L (goods)/₹20L (services), or for any inter-state / e-commerce supply." }
+        ],
+        "us": [
+          { "action": "File your 83(b) election — within 30 days (time-critical)", "where": "IRS Form 15620 / by mail", "url": "https://www.irs.gov/pub/irs-pdf/f15620.pdf", "note": "Strict 30-day deadline from stock purchase, no extensions. Confirm with a CPA." },
+          { "action": "Put founders on reverse vesting", "where": "Carta — vesting explainer", "url": "https://carta.com/learn/equity/stock-options/vesting/", "note": "Standard 4-year vest, 1-year cliff; ~95% of VC term sheets require it." }
+        ]
+      }
+    },
+    "mvp": {
+      "hiring": {
+        "summary": "Your first hire is usually an engineer. Hire from startup-native channels; use contractors to stay lean.",
+        "global": [
+          { "action": "Learn how to hire your first engineer", "where": "YC Startup Library", "url": "https://www.ycombinator.com/library/4H-how-to-hire-your-first-engineer", "note": "100% of companies hire ≥1 engineer in their first three hires (YC/Carta-cited)." },
+          { "action": "Post roles where founders hire", "where": "Wellfound + YC Work at a Startup", "url": "https://wellfound.com/", "note": "Equity shown upfront. Also: Work at a Startup (workatastartup.com), HN 'Who is hiring' (hnhiring.com)." },
+          { "action": "Use vetted contractors to stay lean", "where": "Toptal / Upwork", "url": "https://www.toptal.com/", "note": "Toptal = screened senior contractors; Upwork = broad/budget. Mind contractor-vs-employee classification." }
+        ],
+        "india": [
+          { "action": "Source India tech talent", "where": "Instahyre / Cutshort", "url": "https://www.instahyre.com/", "note": "Curated, AI-matched startup hiring. Also Hirist (tech), Naukri (breadth), campus placement cells." },
+          { "action": "Plan your ESOP pool", "where": "Qapita — ESOPs in India", "url": "https://www.qapita.com/in/blog/how-esops-are-powering-indias-startup-revolution", "note": "Early-stage pool typically 10–15%; first few hires ~1% each; 4-yr vest / 1-yr cliff." }
+        ]
+      }
+    },
+    "traction": {
+      "fundraising": {
+        "summary": "If you raise now, it's pre-seed/seed. Know where founders actually raise and what instrument fits your geography.",
+        "us": [
+          { "action": "Raise via syndicates / angels", "where": "AngelList Syndicates", "url": "https://www.angellist.com/investors/syndicates", "note": "Back-a-lead per-deal SPVs. SAFE (post-money) is standard under ~$5M." }
+        ],
+        "india": [
+          { "action": "Reach angels at scale", "where": "LetsVenture (LVX)", "url": "https://www.letsventure.com/", "note": "14,000+ angels/family offices. Also Indian Angel Network and Mumbai Angels." }
+        ],
+        "global": [
+          { "action": "Know the seed bar before you raise", "where": "First Round — Levels of PMF", "url": "https://www.firstround.com/levels", "note": "Seed signal ≈ 20+ customers, approaching ~$1M ARR, emerging repeatability." }
+        ]
+      },
+      "hiring": {
+        "summary": "As you grow, formalize equity and use an EOR to hire across borders.",
+        "global": [
+          { "action": "Hire across borders compliantly", "where": "Deel / Remote / Rippling (EOR)", "url": "https://www.deel.com/solutions/payroll/eor/", "note": "Employer-of-record in many countries; confirm current pricing on each vendor's page." }
+        ]
+      }
+    },
+    "fundraise": {
+      "fundraising": {
+        "summary": "Pick the instrument, understand the ladder, and target investors who write checks at your stage.",
+        "us": [
+          { "action": "Understand SAFE vs priced rounds", "where": "YC — SAFEs and priced rounds", "url": "https://www.ycombinator.com/library/6m-understanding-safes-and-priced-equity-rounds", "note": "SAFE under ~$5M; priced Series Seed/A above. US median seed raise ≈ $4M (Carta-cited, verify)." }
+        ],
+        "india": [
+          { "action": "Tap government commercialization funding", "where": "Startup India Seed Fund Scheme (SISFS)", "url": "https://seedfund.startupindia.gov.in/", "note": "Up to ₹50L for market entry/commercialization. SIDBI FFS funds you indirectly via SEBI-registered AIFs." }
+        ]
+      },
+      "incubators": {
+        "summary": "Accelerators give capital + network + a forcing function. Apply where the check and focus match you.",
+        "global": [
+          { "action": "Apply to Y Combinator", "where": "YC", "url": "https://www.ycombinator.com/apply", "note": "$500K total on SAFEs ($125K/7% post-money + $375K uncapped MFN)." },
+          { "action": "Apply to Techstars", "where": "Techstars", "url": "https://www.techstars.com/accelerators", "note": "~$220K ($20K/5% common + $200K SAFE); apply to a specific program." },
+          { "action": "Apply to 500 Global", "where": "500 Global Flagship", "url": "https://flagship.aplica.500.co/", "note": "$150K for 6%; ~4-month Silicon Valley program, rolling." }
+        ],
+        "india": [
+          { "action": "Apply to Antler India", "where": "Antler", "url": "https://www.antler.co/apply", "note": "Day-zero backing; recent India cohort headline ₹4 Cr (~$470K) for ~11% (verify per cohort)." },
+          { "action": "Apply to a university / govt incubator", "where": "T-Hub · NSRCEL (IIM-B) · SINE (IIT-B) · IIT-M Incubation", "url": "https://t-hub.co/", "note": "Strong for India-based deep-tech/early teams. NSRCEL nsrcel.org/programs, SINE sineiitb.org, IIT-M incubation.iitm.ac.in." }
+        ]
+      }
+    },
+    "scale": {
+      "fundraising": {
+        "summary": "Series A is a different bar: repeatable revenue and clean unit economics, not just growth.",
+        "global": [
+          { "action": "Hit the Series A bar", "where": "ScaleUp Finance — the Series A crunch", "url": "https://www.scaleup.finance/article/the-series-a-crunch-is-back-why-85-of-seed-stage-startups-now-fail-to-raise-series-a-and-how-to-beat-the-odds", "note": "Median Series A now ≈ $2.5M ARR; only ~20% of seed startups reach A (Carta-cited)." },
+          { "action": "Pace your growth", "where": "Battery Ventures — T2D3", "url": "https://www.battery.com/blog/helping-entrepreneurs-triple-triple-double-double-double-to-a-billion-dollar-company/", "note": "After PMF (~$2M ARR): triple x2 years, then double x3." }
+        ]
+      },
+      "compliance": {
+        "summary": "Ongoing filings become non-negotiable at scale. Miss them and you risk penalties or disqualification.",
+        "india": [
+          { "action": "File annual ROC returns", "where": "MCA — AOC-4 & MGT-7", "url": "https://www.mca.gov.in", "note": "AOC-4 within 30 days of AGM; MGT-7 within 60 days. Late MGT-7: ₹100/day, no cap." },
+          { "action": "Report foreign investment", "where": "RBI FIRMS — Form FC-GPR", "url": "https://firms.rbi.org.in", "note": "Within 30 days of allotting shares to foreign investors. EPF registration kicks in at 20+ employees." }
+        ],
+        "us": [
+          { "action": "Pay Delaware franchise tax the smart way", "where": "Delaware franchise tax calculator", "url": "https://corp.delaware.gov/frtaxcalc/", "note": "Due March 1. Switch to the Assumed Par Value method — the default Authorized Shares method overstates startups' bill by tens of thousands." },
+          { "action": "File the federal corporate return", "where": "IRS Form 1120", "url": "https://www.irs.gov/forms-pubs/about-form-1120", "note": "A C-corp must file even with $0 revenue. Foreign-qualify in states where you actually operate." }
+        ]
+      },
+      "hiring": {
+        "summary": "Turn hiring into a repeatable system.",
+        "global": [
+          { "action": "Adopt an ATS + benchmark comp", "where": "Carta startup compensation data", "url": "https://carta.com/data/startup-compensation-h1-2025/", "note": "Use Greenhouse/Lever/Ashby for pipeline; benchmark equity/cash before scaling offers." }
+        ]
+      }
+    }
+  },
+  "companies": [
+    { "name": "Stripe", "does": "Payments infrastructure for internet businesses.", "stage": "traction", "move": "The 'Collison installation' — when someone agreed to try Stripe, the founders said 'give me your laptop' and set them up on the spot.", "lesson": "Win your first customers by hand — onboard them yourself instead of waiting on a signup link.", "source": "https://www.paulgraham.com/ds.html" },
+    { "name": "Airbnb", "does": "Marketplace for short-term home stays.", "stage": "traction", "move": "Founders went door-to-door in NYC (YC W09) to recruit hosts and reshoot listing photos.", "lesson": "When a marketplace won't ignite, serve your earliest users face-to-face before automating.", "source": "https://paulgraham.com/ds.html" },
+    { "name": "Dropbox", "does": "Cloud file backup and sharing.", "stage": "validation", "move": "Posted a ~3-min demo video to Hacker News before the product was fully built; the waitlist reportedly jumped ~5k → 75k overnight (widely reported).", "lesson": "A cheap artifact that shows the experience can validate demand faster than code.", "source": "https://www.ycombinator.com/companies/dropbox" },
+    { "name": "Figma", "does": "Browser-based collaborative design tool.", "stage": "mvp", "move": "~3.5–4 years of stealth R&D (2012 → invite preview 2015 → launch 2016) to make pro design work in a browser.", "lesson": "When your wedge is a hard technical bet, it can be worth staying heads-down to get the core right.", "source": "https://en.wikipedia.org/wiki/Figma_(software)" },
+    { "name": "Notion", "does": "All-in-one connected workspace.", "stage": "mvp", "move": "Near-death rewrite (~2015): nearly out of cash, the founders laid off the team, moved to Kyoto, and rebuilt around simplicity.", "lesson": "If users keep bouncing off, a radical strip-down-and-rebuild can beat patching a flawed base.", "source": "https://en.wikipedia.org/wiki/Notion_(productivity_software)" },
+    { "name": "Postman", "does": "API development & testing platform.", "stage": "traction", "move": "Started (Bangalore, 2012) as a free Chrome extension scratching the founder's own itch; ~500k users before the company was formally set up.", "lesson": "A free, zero-friction tool solving your own pain can drive bottom-up adoption that proves demand.", "source": "https://en.wikipedia.org/wiki/Postman_(software)" },
+    { "name": "Canva", "does": "Drag-and-drop graphic design for non-designers.", "stage": "idea", "move": "Built a narrow precursor first — Fusion Books (2007), a yearbook design tool — and ran it for years before generalizing into Canva (2013).", "lesson": "Prove your core insight on a narrow, real use case before the big platform bet.", "source": "https://en.wikipedia.org/wiki/Melanie_Perkins" },
+    { "name": "Brex", "does": "Corporate spend platform (cards, accounts).", "stage": "validation", "move": "Entered YC (W17) to build VR, realized they lacked the expertise, and pivoted to a corporate card for startups — a pain they felt directly.", "lesson": "Pivot fast toward an acute pain you feel firsthand; proximity to a real problem beats loyalty to the original idea.", "source": "https://www.ycombinator.com/companies/brex" },
+    { "name": "CRED", "does": "Members-only credit-card bill payments + rewards.", "stage": "traction", "move": "Launched 2018 as invite-only, gated by a high credit score — a deliberately exclusive, high-trust wedge.", "lesson": "A deliberately exclusive segment can be a launch strategy — gating concentrates value and makes the product aspirational.", "source": "https://en.wikipedia.org/wiki/Cred_(company)" },
+    { "name": "Razorpay", "does": "Full-stack payments for Indian businesses.", "stage": "incorporate", "move": "YC W15; spent the first ~6 months securing bank/regulatory approvals before chasing product.", "lesson": "In a regulated category, approvals and compliance ARE the foundation — budget months for them before expecting to ship.", "source": "https://razorpay.com/blog/harshil-mathur-on-funding-accelerators/" },
+    { "name": "Zerodha", "does": "India's largest stock brokerage (discount broking).", "stage": "fundraise", "move": "Founded 2010, fully bootstrapped from savings; pioneered flat-fee trades instead of percentage commissions — never needed VC.", "lesson": "Raising is a choice. A contrarian, cost-led model can be the entire wedge.", "source": "https://zerodha.com/about/" },
+    { "name": "Flipkart", "does": "India's largest e-commerce marketplace.", "stage": "mvp", "move": "Started (2007) selling only books from an apartment, did everything by hand, and built trust via cash-on-delivery and easy returns.", "lesson": "Start with one narrow, low-risk category and own the whole experience; removing the customer's risk can matter more than range.", "source": "https://en.wikipedia.org/wiki/Flipkart" },
+    { "name": "Zoho", "does": "Broad suite of cloud business software.", "stage": "scale", "move": "Bootstrapped since 1996 with no VC; built its own talent pipeline via Zoho Schools (training non-degree, rural students).", "lesson": "You can build a global software company without VC by controlling costs and owning your talent pipeline.", "source": "https://en.wikipedia.org/wiki/Sridhar_Vembu" }
+  ]
+}
