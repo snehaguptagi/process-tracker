@@ -10,6 +10,15 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+
+# Backend (Python)
+backend/.venv/
+backend/__pycache__/
+*.db
+
+# Env
+.env
+backend/.env
 *.local
 
 # Editor directories and files

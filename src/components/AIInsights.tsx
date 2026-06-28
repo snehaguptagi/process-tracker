@@ -1,75 +1,37 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Sparkles, KeyRound, Loader2, AlertCircle } from "lucide-react";
-
-// Default model — change to any Claude model your API key can access.
-const MODEL = "claude-sonnet-4-6";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, Loader2, AlertCircle, AlertTriangle, ArrowRight } from "lucide-react";
+import { getInsights, type Filters, type Insights } from "@/lib/api";
 
 interface AIInsightsProps {
-  summary: string;
+  filters: Filters;
 }
 
-const AIInsights = ({ summary }: AIInsightsProps) => {
-  const [apiKey, setApiKey] = useState(
-    () => localStorage.getItem("anthropic_api_key") || ""
-  );
-  const [showKey, setShowKey] = useState(
-    () => !localStorage.getItem("anthropic_api_key")
-  );
+/**
+ * AI Pipeline Insights — calls the backend, which runs Claude when an
+ * ANTHROPIC_API_KEY is configured server-side, or a deterministic heuristic
+ * otherwise. Either way the read is grounded in the current filtered metrics.
+ */
+const AIInsights = ({ filters }: AIInsightsProps) => {
   const [loading, setLoading] = useState(false);
-  const [insight, setInsight] = useState("");
+  const [engine, setEngine] = useState("");
+  const [insights, setInsights] = useState<Insights | null>(null);
   const [error, setError] = useState("");
 
-  const saveKey = (k: string) => {
-    setApiKey(k);
-    localStorage.setItem("anthropic_api_key", k);
-  };
-
   const generate = async () => {
-    if (!apiKey) {
-      setError("Enter your Anthropic API key first.");
-      setShowKey(true);
-      return;
-    }
     setLoading(true);
     setError("");
-    setInsight("");
-
-    const prompt =
-      "You are an operations analyst reviewing a work-item pipeline dashboard. " +
-      "Using ONLY the figures below, write a tight analysis with three labelled sections:\n" +
-      "1. Status — two sentences on overall pipeline health.\n" +
-      "2. Bottlenecks — the 2 stages or record types most at risk, grounded in the numbers.\n" +
-      "3. Actions — the 2 highest-leverage next moves.\n\n" +
-      `Current pipeline:\n${summary}`;
-
+    setInsights(null);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          max_tokens: 800,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error?.message || `API error ${res.status}`);
-      }
-      setInsight(data?.content?.[0]?.text ?? "No response returned.");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Request failed.");
-    } finally {
-      setLoading(false);
+      const res = await getInsights(filters);
+      setEngine(res.engine);
+      setInsights(res.insights);
+    } catch {
+      setError("Couldn't reach the backend. Is it running on port 8000?");
     }
+    setLoading(false);
   };
 
   return (
@@ -80,54 +42,23 @@ const AIInsights = ({ summary }: AIInsightsProps) => {
             <Sparkles className="h-5 w-5 mr-3" />
             AI Pipeline Insights
           </span>
-          <button
-            onClick={() => setShowKey((s) => !s)}
-            className="text-xs font-normal opacity-80 hover:opacity-100 flex items-center"
-            aria-label="API key settings"
-          >
-            <KeyRound className="h-4 w-4 mr-1" />
-            {apiKey ? "Change key" : "Set key"}
-          </button>
+          {engine && (
+            <Badge variant="outline" className="text-xs font-normal border-white/40 text-white">
+              {engine === "claude" ? "Claude" : "Heuristic"}
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6 space-y-4">
-        {showKey && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-600">
-              Anthropic API key (stored only in your browser)
-            </label>
-            <Input
-              type="password"
-              placeholder="sk-ant-..."
-              value={apiKey}
-              onChange={(e) => saveKey(e.target.value)}
-            />
-            <p className="text-xs text-gray-500">
-              Get one at{" "}
-              <a
-                href="https://console.anthropic.com/settings/keys"
-                target="_blank"
-                rel="noreferrer"
-                className="text-brand-primary underline"
-              >
-                console.anthropic.com
-              </a>
-              .
-            </p>
-          </div>
-        )}
-
-        <Button onClick={generate} disabled={loading} className="bg-brand-primary hover:bg-brand-primary/90 text-white">
+        <Button
+          onClick={generate}
+          disabled={loading}
+          className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+        >
           {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Analyzing…
-            </>
+            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Analyzing…</>
           ) : (
-            <>
-              <Sparkles className="h-4 w-4 mr-2" />
-              Analyze pipeline with AI
-            </>
+            <><Sparkles className="h-4 w-4 mr-2" /> Analyze pipeline with AI</>
           )}
         </Button>
 
@@ -138,15 +69,43 @@ const AIInsights = ({ summary }: AIInsightsProps) => {
           </div>
         )}
 
-        {insight && (
-          <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 rounded-lg p-4 border border-gray-200">
-            {insight}
+        {insights && (
+          <div className="space-y-4">
+            <div className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg p-4 border border-gray-200">
+              {insights.status}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-semibold text-brand-primary flex items-center gap-1 mb-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" /> Bottlenecks
+                </p>
+                <ul className="space-y-1.5">
+                  {insights.bottlenecks.map((b, i) => (
+                    <li key={i} className="text-sm text-gray-700 flex gap-2">
+                      <span className="text-amber-500">•</span> {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-brand-primary flex items-center gap-1 mb-2">
+                  <ArrowRight className="h-4 w-4 text-brand-accent" /> Recommended actions
+                </p>
+                <ul className="space-y-1.5">
+                  {insights.actions.map((a, i) => (
+                    <li key={i} className="text-sm text-gray-700 flex gap-2">
+                      <span className="text-brand-accent">→</span> {a}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
         )}
 
-        {!insight && !error && !loading && (
+        {!insights && !error && !loading && (
           <p className="text-sm text-gray-500">
-            Claude reads the current filtered pipeline and flags bottlenecks + next actions.
+            Reads the current filtered pipeline and flags bottlenecks + the next moves.
           </p>
         )}
       </CardContent>

@@ -1,0 +1,9 @@
+# Core backend
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+python-dotenv>=1.0
+
+# AI insights (real mode). Without an ANTHROPIC_API_KEY the engine falls back
+# to a deterministic heuristic, so the backend runs with zero credentials.
+anthropic>=0.49
